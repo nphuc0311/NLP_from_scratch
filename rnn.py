@@ -114,6 +114,10 @@ class RNN(RNN_Base):
     ) -> None:
         ...
 
+    @overload
+    def __init__(self, *args, **kwargs):
+        ...
+
     def __init__(self, *args, **kwargs):
         mode = "RNN"
         super().__init__(mode, *args, **kwargs)
@@ -166,7 +170,7 @@ class RNN(RNN_Base):
                     h_t_minus_1_backward = self.rnn_cell(input, h_t_minus_1_backward, weights_backward)
                     h_t_backward[seq_len - t - 1] = h_t_minus_1_backward
 
-            output = torch.cat((h_t_forward, h_t_backward), dim=2) if bidirectional else h_t_forward
+            output = torch.cat((h_t_forward, h_t_backward), dim=2) if self.bidirectional else h_t_forward
         
         if self.batch_first:
             output = output.transpose(0, 1) 
