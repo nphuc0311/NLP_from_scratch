@@ -6,6 +6,7 @@ from typing import Optional, Tuple, overload
 from torch import Tensor
 from torch.nn import Parameter
 from torch.nn import init
+from utils import copy_parameters
 
 torch.manual_seed(42)
 
@@ -186,10 +187,8 @@ if __name__ == "__main__":
     batch_size = 3
     seq_len = 5
     bias = True
-    bidirectional = False
+    bidirectional = True
 
-
-    num_directions = 2 if bidirectional else 1
     pytorch_rnn = nn.RNN(input_size, 
                     hidden_size, 
                     num_layers, 
@@ -200,7 +199,7 @@ if __name__ == "__main__":
                 )
 
 
-    my_rnn = RNN(input_size, 
+    rnn_from_scratch = RNN(input_size, 
                 hidden_size, 
                 num_layers,
                 nonlinearity="relu", 
@@ -210,45 +209,13 @@ if __name__ == "__main__":
 
     input = torch.rand(batch_size, seq_len, input_size)
 
-    # Copy parameters from pytorch_rnn to my_rnn for checking result
-    with torch.no_grad():
-        for layer in range(num_layers):
-            for direction in range(num_directions):
-                suffix = "_reverse" if direction == 1 else ""
-                
-                # Parameter names in pytorch_rnn
-                weight_ih_name = f"weight_ih_l{layer}"
-                weight_hh_name = f"weight_hh_l{layer}"
-                if bias:
-                    bias_ih_name = f"bias_ih_l{layer}"
-                    bias_hh_name = f"bias_hh_l{layer}"
-                
-                if direction == 1:  # Reverse for bidirectional
-                    weight_ih_name += "_reverse"
-                    weight_hh_name += "_reverse"
-                    if bias:
-                        bias_ih_name += "_reverse"
-                        bias_hh_name += "_reverse"
-                
-                # Parameter names in my_rnn
-                my_weight_ih_name = f"weight_ih_l{layer}{suffix}"
-                my_weight_hh_name = f"weight_hh_l{layer}{suffix}"
-                if bias:
-                    my_bias_ih_name = f"bias_ih_l{layer}{suffix}"
-                    my_bias_hh_name = f"bias_hh_l{layer}{suffix}"
-                
-                # Assign parameters
-                setattr(my_rnn, my_weight_ih_name, nn.Parameter(getattr(pytorch_rnn, weight_ih_name).detach().clone()))
-                setattr(my_rnn, my_weight_hh_name, nn.Parameter(getattr(pytorch_rnn, weight_hh_name).detach().clone()))
-                if bias:
-                    setattr(my_rnn, my_bias_ih_name, nn.Parameter(getattr(pytorch_rnn, bias_ih_name).detach().clone()))
-                    setattr(my_rnn, my_bias_hh_name, nn.Parameter(getattr(pytorch_rnn, bias_hh_name).detach().clone()))
+    copy_parameters(rnn_from_scratch, pytorch_rnn, num_layers, bias, bidirectional)
 
     # Test the output again
-    my_out = my_rnn(input)
-    pytorch_out, pytorch_ht = pytorch_rnn(input)
+    out = rnn_from_scratch(input)
+    pytorch_out, _ = pytorch_rnn(input)
 
     # Compare outputs
-    out_dif = torch.abs(pytorch_out - my_out).max().item()
+    out_dif = torch.abs(pytorch_out - out).max().item()
     assert out_dif < 1e-6, "Your RNN is different with torch.nn.RNN from Pytorch, {}".format(out_dif)
     print("Passed, output difference:", out_dif)
