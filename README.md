@@ -1,5 +1,5 @@
 
-# Custom RNN, LSTM, and GRU Implementation in PyTorch
+# RNN, LSTM, and GRU Implementation from scratch in PyTorch
 
 This repository provides implementations from scratch of three common Recurrent Neural Network (RNN) architectures: vanilla RNN, LSTM, and GRU, using PyTorch. These implementations aim to practice coding RNN, LSTM, and GRU from scratch to gain a deeper understanding of how they work.
 
